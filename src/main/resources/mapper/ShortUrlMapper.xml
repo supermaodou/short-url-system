@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.shorturl.mapper.ShortUrlMapper">
+    <select id="findByShortCode" resultType="ShortUrl">
+        SELECT * FROM short_url WHERE short_code = #{shortCode}
+    </select>
+
+    <insert id="insert" parameterType="ShortUrl">
+        INSERT INTO short_url (short_code, long_url, created_at, visit_count)
+        VALUES (#{shortCode}, #{longUrl}, #{createdAt}, #{visitCount})
+    </insert>
+
+    <update id="updateVisitCount">
+        UPDATE short_url SET visit_count = visit_count + 1
+        WHERE short_code = #{shortCode}
+    </update>
+
+    <select id="countByShortCode" resultType="int">
+        SELECT COUNT(*) FROM short_url WHERE short_code = #{shortCode}
+    </select>
+</mapper>
