@@ -16,18 +16,19 @@ public class ShortUrlGenerator {
 
     public String generateShortCode(String longUrl) {
         try {
+            // 结合时间戳和随机数增加唯一性
+            String seed = longUrl + System.nanoTime();
             MessageDigest digest = MessageDigest.getInstance("MD5");
-            byte[] hash = digest.digest(longUrl.getBytes());
+            byte[] hash = digest.digest(seed.getBytes());
             StringBuilder sb = new StringBuilder();
-            long num = Math.abs(Arrays.hashCode(hash));
-            
+            long num = Math.abs(hash.hashCode() ^ System.currentTimeMillis());
+
             while (sb.length() < length) {
                 sb.append(BASE62.charAt((int)(num % BASE)));
                 num /= BASE;
             }
             return sb.toString();
         } catch (Exception e) {
-            // Fallback to random string if hash fails
             return randomString(length);
         }
     }
