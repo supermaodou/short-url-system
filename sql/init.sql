@@ -8,5 +8,6 @@ CREATE TABLE short_url
     long_url    TEXT        NOT NULL,
     created_at  DATETIME    NOT NULL,
     visit_count BIGINT DEFAULT 0,
+    expire_at   DATETIME    NULL,
     INDEX idx_short_code (short_code)
 );
