@@ -1,17 +1,17 @@
 package com.example.shorturl.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.shorturl.mapper.ShortUrlMapper;
 import com.example.shorturl.model.ShortUrl;
 import com.example.shorturl.service.ShortUrlService;
 import com.example.shorturl.util.ShortUrlGenerator;
+import com.example.shorturl.util.UrlValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -24,6 +24,9 @@ public class ShortUrlServiceImpl implements ShortUrlService {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
+    
+    @Autowired
+    private UrlValidator urlValidator;
 
     @Value("${short-url.domain}")
     private String domain;
@@ -33,9 +36,14 @@ public class ShortUrlServiceImpl implements ShortUrlService {
 
     @Override
     public String createShortUrl(String longUrl) {
-        if (!isValidUrl(longUrl)) {
-            throw new IllegalArgumentException("无效的URL格式，链接必须以http://或https://开头");
+        // 使用专业的URL验证器进行验证
+        if (!urlValidator.isValidUrl(longUrl)) {
+            String errorMsg = urlValidator.getValidationError(longUrl);
+            throw new IllegalArgumentException("URL验证失败：" + errorMsg);
         }
+
+        // 标准化URL
+        longUrl = urlValidator.normalizeUrl(longUrl);
 
         String shortCode;
         int maxAttempts = 10;
@@ -45,7 +53,7 @@ public class ShortUrlServiceImpl implements ShortUrlService {
                 throw new RuntimeException("无法生成唯一短链接，请稍后重试");
             }
             shortCode = shortUrlGenerator.generateShortCode(longUrl);
-        } while (shortUrlMapper.countByShortCode(shortCode) > 0);
+        } while (shortUrlMapper.selectCount(new QueryWrapper<ShortUrl>().eq("short_code", shortCode)) > 0);
 
         ShortUrl shortUrl = new ShortUrl();
         shortUrl.setShortCode(shortCode);
@@ -65,7 +73,7 @@ public class ShortUrlServiceImpl implements ShortUrlService {
         // 检查缓存
         String longUrl = redisTemplate.opsForValue().get("short:" + shortCode);
         if (longUrl != null) {
-            ShortUrl shortUrl = shortUrlMapper.findByShortCode(shortCode);
+            ShortUrl shortUrl = shortUrlMapper.selectOne(new QueryWrapper<ShortUrl>().eq("short_code", shortCode));
             if (shortUrl != null && isExpired(shortUrl)) {
                 throw new IllegalStateException("短链接已过期");
             }
@@ -74,7 +82,7 @@ public class ShortUrlServiceImpl implements ShortUrlService {
         }
 
         // 检查数据库
-        ShortUrl shortUrl = shortUrlMapper.findByShortCode(shortCode);
+        ShortUrl shortUrl = shortUrlMapper.selectOne(new QueryWrapper<ShortUrl>().eq("short_code", shortCode));
         if (shortUrl == null) {
             throw new IllegalArgumentException("短链接不存在");
         }
@@ -87,10 +95,6 @@ public class ShortUrlServiceImpl implements ShortUrlService {
         shortUrlMapper.updateVisitCount(shortCode);
 
         return shortUrl.getLongUrl();
-    }
-
-    private boolean isValidUrl(String url) {
-        return url != null && url.matches("^(https?://)([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$");
     }
 
     private boolean isExpired(ShortUrl shortUrl) {

@@ -11,12 +11,12 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
-@RequestMapping("/api")
+//@RequestMapping("/api")
 public class ShortUrlController {
     @Autowired
     private ShortUrlService shortUrlService;
 
-    @PostMapping(value = "/shorten", consumes = MediaType.TEXT_PLAIN_VALUE)
+    @PostMapping(value = "/api/shorten", consumes = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> shortenUrl(@RequestBody String longUrl) {
         // 解码 URL 编码的输入
         String decodedUrl = URLDecoder.decode(longUrl, StandardCharsets.UTF_8);

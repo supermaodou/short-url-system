@@ -18,9 +18,18 @@ spring:
     redis:
       host: localhost
       port: 6379
-mybatis:
+mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.example.shorturl.model
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 short-url:
 #  domain: http://short.url/
   domain: http://localhost:8086/

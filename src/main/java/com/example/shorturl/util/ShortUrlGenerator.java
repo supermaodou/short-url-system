@@ -21,7 +21,7 @@ public class ShortUrlGenerator {
             MessageDigest digest = MessageDigest.getInstance("MD5");
             byte[] hash = digest.digest(seed.getBytes());
             StringBuilder sb = new StringBuilder();
-            long num = Math.abs(hash.hashCode() ^ System.currentTimeMillis());
+            long num = Math.abs(Arrays.hashCode(hash) ^ System.currentTimeMillis());
 
             while (sb.length() < length) {
                 sb.append(BASE62.charAt((int)(num % BASE)));
